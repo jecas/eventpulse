@@ -1,4 +1,5 @@
 # EventPulse
+[![Tests](https://github.com/jecas/eventpulse/actions/workflows/tests.yml/badge.svg)](https://github.com/jecas/eventpulse/actions/workflows/tests.yml)
 
 **Reliable event-driven processing platform built with Python, FastAPI, RabbitMQ, PostgreSQL, and Redis.**
 
