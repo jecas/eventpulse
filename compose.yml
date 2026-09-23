@@ -1,0 +1,81 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: eventpulse
+      POSTGRES_USER: eventpulse
+      POSTGRES_PASSWORD: eventpulse
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventpulse -d eventpulse"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: eventpulse
+      RABBITMQ_DEFAULT_PASS: eventpulse
+    ports:
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  mock-external:
+    build:
+      context: .
+      dockerfile: mock_external/Dockerfile
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9000/health')"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment: &app-env
+      DATABASE_URL: postgresql+asyncpg://eventpulse:eventpulse@postgres:5432/eventpulse
+      RABBITMQ_URL: amqp://eventpulse:eventpulse@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      EXTERNAL_API_URL: http://mock-external:9000
+      RETRY_DELAY_MS: 200
+      MAX_ATTEMPTS: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-external:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+      start_period: 5s
+
+  worker:
+    build: .
+    environment: *app-env
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["python", "-m", "app.worker.main"]
