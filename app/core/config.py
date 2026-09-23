@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "EventPulse"
-    app_version: str = "0.1.0"
+    app_version: str = "1.0.0"
     api_prefix: str = "/api/v1"
     database_url: str = "postgresql+asyncpg://eventpulse:eventpulse@postgres:5432/eventpulse"
     rabbitmq_url: str = "amqp://eventpulse:eventpulse@rabbitmq:5672/"
