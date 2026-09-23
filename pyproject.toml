@@ -1,6 +1,6 @@
 [project]
 name = "eventpulse"
-version = "0.1.0"
+version = "1.0.0"
 description = "Event-driven processing service built with Python, FastAPI, RabbitMQ, PostgreSQL and Redis."
 readme = "README.md"
 requires-python = ">=3.12"
